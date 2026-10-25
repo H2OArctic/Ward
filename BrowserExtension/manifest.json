@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Ward",
+  "description": "Пароли и passkey из Ward — локального менеджера паролей на этом Mac.",
+  "version": "1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvlhpcrlEjm7sKHj6MBGPYdxmk8vFnr+WoZea14FQm2W8rFG3dCDNbP/9x3Ka3rKTzNoYeIGQ311fai5X0Zwcws6AbsyVghV6e3pdn3MaUxz7wGlK+oH46/K8SPdlyO5NabXTGxgD6Y3MqT46a1dPwFQ16M3KgfHfPbzdWUN76nGOYgaecsj2511mRNhg5JyIkEC/QEk5mUus9A2L17TT2oRx6MtQYsWuUI23MdrC20UjrrImeH/VuO/9Z7+PIc1qAaue2jXlLS222G+dCKpxkWYDJcnm8SDchrTfM8cs8x7gMyI7FuEIcp1j82jA00JjGhaH4ONp7kSUIOtwJ1IZiQIDAQAB",
+  "minimum_chrome_version": "111",
+  "permissions": ["nativeMessaging", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_icon": { "16": "icons/16.png", "32": "icons/32.png" } },
+  "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["webauthn.js"], "run_at": "document_start", "all_frames": true, "world": "MAIN" },
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_start", "all_frames": true }
+  ]
+}

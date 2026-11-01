@@ -104,6 +104,7 @@ struct EntryEditor: View {
                     Hairline()
                     // Одинаковый отступ перед каждым разделом: заголовок не прилипает к карточке предыдущего.
                     Group {
+                        WalletEditor(wallet: $entry.wallet)
                         twoFactor
                         SSHKeyEditor(ssh: $entry.ssh, linkedID: $entry.sshKeyEntryID, entryID: entry.id)
                         CertificateEditor(certificate: $entry.certificate, linkedID: $entry.certificateEntryID, entryID: entry.id)

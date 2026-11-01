@@ -40,6 +40,7 @@ struct EntryDetail: View {
                     issueBanner
                     if let reminder = entry.reminder { reminderCard(reminder) }
                     if showsFieldsCard { fieldsCard }
+                    if let wallet = entry.wallet { WalletCard(wallet: wallet).id(entry.id) }
                     if entry.isConnection { connectionUsersCard }
                     if !entry.passkeys.isEmpty { passkeysCard }
                     if !entry.fields.isEmpty { customFieldsCard }
@@ -334,7 +335,7 @@ struct EntryDetail: View {
 
     // Карта, документ, ключ без пароля — не учётная запись: пустые «Пароль: не задан» и «Добавить 2FA» им не нужны.
     private var showsSecretRow: Bool {
-        !(entry.authKind == .password && entry.secret.isEmpty && (entry.hasSSH || entry.hasCertificate || !entry.fields.isEmpty))
+        !(entry.authKind == .password && entry.secret.isEmpty && (entry.wallet != nil || entry.hasSSH || entry.hasCertificate || !entry.fields.isEmpty))
     }
     private var showsTOTPRow: Bool {
         entry.totp != nil || !entry.login.isEmpty || !entry.url.trimmingCharacters(in: .whitespaces).isEmpty

@@ -413,11 +413,12 @@ extension Entry {
             return "Вход через аккаунт"
         case .password:
             var parts: [String] = []
+            if wallet != nil { parts.append("Криптокошелёк") }
             if !login.isEmpty { parts.append(Format.loginLabel(loginKind)) }
-            if secret.isEmpty && !hasSSH && !hasCertificate && totp == nil && !fields.isEmpty {
+            if wallet == nil && secret.isEmpty && !hasSSH && !hasCertificate && totp == nil && !fields.isEmpty {
                 return Format.plural(fields.count, "поле", "поля", "полей")
             }
-            if !secret.isEmpty || (!hasSSH && !hasCertificate) { parts.append("пароль") }
+            if !secret.isEmpty || (wallet == nil && !hasSSH && !hasCertificate) { parts.append("пароль") }
             if hasSSH { parts.append("SSH-ключ") }
             if hasCertificate { parts.append("сертификат") }
             if totp != nil { parts.append("2FA") }

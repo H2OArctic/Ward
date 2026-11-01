@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import SwiftUI
 import WardCore
 
 /// `WARD_SNAPSHOT=<папка> ./Ward.app/Contents/MacOS/Ward` — рисует основные экраны на демо-данных
@@ -25,6 +26,7 @@ enum Snapshots {
         await store.loadDemo(demo)
         let billing = demo.projects.first { $0.name == "Биллинг" }!
 
+        var materialWindow: NSWindow?
         var steps: [(String, () -> NSWindow?)] = [
             ("1-panel", { panel.show(); return NSApp.windows.first { $0 is KeyPanel } }),
             ("2-main-personal", {
@@ -40,6 +42,10 @@ enum Snapshots {
             }),
             ("3a-card", {
                 nav.selection = demo.entries.first { $0.title == "Карта Т-Банк" }?.id
+                return main.nsWindow
+            }),
+            ("3a-wallet", {
+                nav.selection = demo.entries.first { $0.wallet != nil }?.id
                 return main.nsWindow
             }),
             ("3b-ssh", {
@@ -158,7 +164,13 @@ enum Snapshots {
                 settings.show()
                 return NSApp.windows.first { $0.title == "Настройки" }
             }),
+            ("7-wallet-editor", {
+                NSApp.windows.first { $0.title == "Настройки" }?.orderOut(nil)
+                materialWindow = previewWindow(WalletEditor(wallet: .constant(CryptoWallet(network: "Ethereum", address: "demo-address-only"))))
+                return materialWindow
+            }),
             ("8-approval", {
+                materialWindow?.close()
                 ApprovalPanel.shared.show(ApprovalPanel.Request(keyTitle: "Прод-сервер", client: "ssh из git",
                                                                 purpose: "вход как deploy", forwarded: false,
                                                                 canRemember: true)) { _ in }
@@ -256,6 +268,16 @@ enum Snapshots {
         Prefs.shared.apply({ var s = SecuritySettings(); s.browserEnabled = true; return s }())
         BrowserController.shared.start(store: store)
         main.show()
+    }
+
+    private static func previewWindow<Content: View>(_ content: Content) -> NSWindow {
+        let window = NSWindow(contentViewController: NSHostingController(rootView: content
+            .padding(24).frame(width: 560).background(Theme.sheet)
+            .focusEffectDisabled().environment(\.colorScheme, .dark)))
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        return window
     }
 
     private static func save(_ window: NSWindow, to url: URL) {
@@ -420,6 +442,10 @@ enum Snapshots {
                 -----END CERTIFICATE-----
 
                 """)
+            },
+            entry("Холодный кошелёк", .personal) {
+                $0.wallet = CryptoWallet(network: "Ethereum", address: "demo-address-only",
+                                         seedPhrase: "demo-recovery-words-only", privateKey: "demo-private-value-only")
             },
             entry("Карта Т-Банк", .personal, uses: 5) {
                 $0.fields = [CustomField(name: "Номер карты", value: "5536 9137 0000 0000"),

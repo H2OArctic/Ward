@@ -246,6 +246,7 @@ public struct Entry: Codable, Identifiable, Hashable, Sendable {
     public var sshKeyEntryID: UUID?
     public var certificate: CertificateBundle?
     public var certificateEntryID: UUID?
+    public var wallet: CryptoWallet?
     /// Passkey сайта этой записи (WebAuthn): вход без пароля через расширение браузера.
     public var passkeys: [Passkey]
     public var reminder: Reminder?
@@ -282,6 +283,7 @@ public struct Entry: Codable, Identifiable, Hashable, Sendable {
         sshKeyEntryID = nil
         certificate = nil
         certificateEntryID = nil
+        wallet = nil
         passkeys = []
         reminder = nil
         notes = ""
@@ -298,7 +300,7 @@ public struct Entry: Codable, Identifiable, Hashable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case id, title, space, projectID, serviceID, companyID, environments, loginKind, login, authKind, secret, ssoEntryID, url,
-             preSteps, isConnection, totp, ssh, sshKeyEntryID, certificate, certificateEntryID, passkeys, reminder, notes, fields, favorite, history, passwordUpdatedAt, createdAt, updatedAt, lastUsedAt, useCount, deletedAt
+             preSteps, isConnection, totp, ssh, sshKeyEntryID, certificate, certificateEntryID, wallet, passkeys, reminder, notes, fields, favorite, history, passwordUpdatedAt, createdAt, updatedAt, lastUsedAt, useCount, deletedAt
     }
 
     // Все поля, кроме id, опциональны при чтении — чтобы новые поля не ломали старые хранилища.
@@ -327,6 +329,7 @@ public struct Entry: Codable, Identifiable, Hashable, Sendable {
         sshKeyEntryID = try c.decodeIfPresent(UUID.self, forKey: .sshKeyEntryID)
         certificate = try c.decodeIfPresent(CertificateBundle.self, forKey: .certificate)
         certificateEntryID = try c.decodeIfPresent(UUID.self, forKey: .certificateEntryID)
+        wallet = try c.decodeIfPresent(CryptoWallet.self, forKey: .wallet)
         passkeys = try c.decodeIfPresent([Passkey].self, forKey: .passkeys) ?? []
         reminder = try c.decodeIfPresent(Reminder.self, forKey: .reminder)
         notes = try c.decodeIfPresent(String.self, forKey: .notes) ?? ""

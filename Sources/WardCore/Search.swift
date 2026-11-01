@@ -10,7 +10,7 @@ public enum EntrySearch {
             let title = entry.title.lowercased()
             // Скрытые поля (PIN, CVV) в поиск не попадают — иначе по ним можно было бы подбирать значение.
             let visibleFields = entry.fields.filter { !$0.hidden }.map { "\($0.name) \($0.value)" }
-            let haystack = ([title, context(entry), entry.environments.joined(separator: " "), entry.login, entry.url, entry.notes]
+            let haystack = ([title, context(entry), entry.environments.joined(separator: " "), entry.login, entry.url, entry.notes, entry.wallet?.network ?? "", entry.wallet?.address ?? ""]
                 + visibleFields).joined(separator: " ").lowercased()
             let active: [String]
             if tokens.allSatisfy(haystack.contains) {

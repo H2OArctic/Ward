@@ -72,12 +72,14 @@ public struct SSHKey: Codable, Hashable, Sendable {
 public struct CertificateBundle: Codable, Hashable, Sendable {
     /// PEM, один или несколько блоков CERTIFICATE.
     public var certificate: String
+    public var publicKey: String
     public var privateKey: String
     /// Пароль приватного ключа или контейнера .p12.
     public var passphrase: String
     public var pkcs12: Data?
 
-    public init(certificate: String = "", privateKey: String = "", passphrase: String = "", pkcs12: Data? = nil) {
+    public init(certificate: String = "", privateKey: String = "", passphrase: String = "", pkcs12: Data? = nil, publicKey: String = "") {
+        self.publicKey = publicKey
         self.certificate = certificate
         self.privateKey = privateKey
         self.passphrase = passphrase
@@ -86,13 +88,27 @@ public struct CertificateBundle: Codable, Hashable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        publicKey = try c.decodeIfPresent(String.self, forKey: .publicKey) ?? ""
         certificate = try c.decodeIfPresent(String.self, forKey: .certificate) ?? ""
         privateKey = try c.decodeIfPresent(String.self, forKey: .privateKey) ?? ""
         passphrase = try c.decodeIfPresent(String.self, forKey: .passphrase) ?? ""
         pkcs12 = try c.decodeIfPresent(Data.self, forKey: .pkcs12)
     }
 
-    public var isEmpty: Bool { certificate.isEmpty && privateKey.isEmpty && pkcs12 == nil }
+    public var publicMaterial: String {
+        get { [certificate, publicKey].filter { !$0.isEmpty }.joined(separator: "\n") }
+        set {
+            if PEM.blocks(in: newValue).contains(where: \.isCertificate) {
+                certificate = newValue
+                publicKey = ""
+            } else {
+                certificate = ""
+                publicKey = newValue
+            }
+        }
+    }
+
+    public var isEmpty: Bool { certificate.isEmpty && publicKey.isEmpty && privateKey.isEmpty && pkcs12 == nil }
 }
 
 // MARK: - PEM
@@ -514,6 +530,14 @@ extension CertificateBundle {
         let certs = PEM.blocks(in: text).filter { $0.isCertificate && CertificateParser.info(block: $0) != nil }
         if !certs.isEmpty {
             certificate = certs.map(\.text).joined()
+            found = true
+        }
+        let publicBlocks = PEM.blocks(in: text).filter { $0.label == "PUBLIC KEY" || $0.label == "RSA PUBLIC KEY" }
+        if !publicBlocks.isEmpty {
+            publicKey = publicBlocks.map(\.text).joined()
+            found = true
+        } else if let key = SSHKeyParser.publicKey(text) {
+            publicKey = key.line
             found = true
         }
         if let key = PEM.privateKey(in: text) {

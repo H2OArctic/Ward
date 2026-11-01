@@ -40,7 +40,7 @@ An entry's `serviceID` identifies a provider, SaaS product, or external API acco
 
 SSH material and certificates live in `Entry.ssh` and `Entry.certificate`; parsing is implemented in `KeyMaterial.swift`. `EntryAddress` represents an entry's address. `sshKeyEntryID` and `certificateEntryID` link to another entry's material. Resolution, including `Vault.sshKey(for:)`, supports no chains. Custom values live in `Entry.fields`; hidden fields are excluded from search and copied with password handling.
 
-Crypto wallets live in `Entry.wallet` with network, public address, recovery seed phrase, private key, and optional passphrase. Only the network and address are searchable. Wallet secrets use protected clipboard handling and are excluded from CSV exports; encrypted backups preserve the complete wallet.
+Crypto wallets live in `Entry.wallet` with network, public address, recovery seed phrase, private key, and optional passphrase. Only the network and address are searchable. Wallet secrets use protected clipboard handling and are excluded from CSV exports; encrypted backups preserve the complete wallet. Certificate bundles also accept a standalone public key alongside the certificate chain and private key.
 
 Encrypted editor drafts live in `Vault.drafts` as `EntryDraft` values. They are persisted one second after editing, on lock, and on quit. Saving, discarding, or permanently deleting an entry removes its draft. Drafts are excluded from search, audits, exports, and backup merges.
 

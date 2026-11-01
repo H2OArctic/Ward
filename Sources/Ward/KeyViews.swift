@@ -284,6 +284,17 @@ struct CertificateCard: View {
                     }
                 }
             }
+            if !bundle.publicKey.isEmpty {
+                Hairline()
+                DetailRow(label: "Публичный ключ") {
+                    Text(bundle.publicKey).privacySensitive().font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(Theme.text).lineLimit(3).textSelection(.enabled)
+                    Spacer()
+                    IconButton(systemName: "doc.on.doc", label: "Скопировать публичный ключ") {
+                        copy(bundle.publicKey, sensitive: false, "Публичный ключ скопирован")
+                    }
+                }
+            }
             ForEach(Array(others.enumerated()), id: \.offset) { _, cert in
                 Hairline()
                 DetailRow(label: cert.isCA ? "CA" : "В цепочке", minHeight: 48) {
@@ -658,6 +669,7 @@ struct CertificateEditor: View {
     @EnvironmentObject private var store: VaultStore
     @State private var message: String?
     @State private var isError = false
+    @State private var revealPrivateKey = true
 
     private var candidates: [Entry] {
         store.active.filter { $0.id != entryID && $0.certificate != nil }
@@ -685,9 +697,9 @@ struct CertificateEditor: View {
             } else if let bundle = certificate {
                 let first = CertificateParser.primary(in: bundle.certificate)
                 KeySummary(icon: "checkmark.seal",
-                           title: first?.subject ?? (bundle.pkcs12 != nil ? "Контейнер PKCS#12" : "Только приватный ключ"),
+                           title: first?.subject ?? (bundle.pkcs12 != nil ? "Контейнер PKCS#12" : (bundle.publicKey.isEmpty ? "Только приватный ключ" : "Публичный ключ")),
                            subtitle: summary(bundle, first),
-                           ok: !(first?.isExpired() ?? false)) { certificate = nil; message = nil }
+                           ok: recognized(bundle) && !(first?.isExpired() ?? false)) { certificate = nil; message = nil }
                 HStack(spacing: 8) {
                     SourceTile(title: "Добавить файл…", icon: "doc.badge.plus", action: pickFiles)
                     SourceTile(title: "Из буфера", icon: "doc.on.clipboard", action: paste)
@@ -696,6 +708,7 @@ struct CertificateEditor: View {
                     FieldLabel(text: bundle.pkcs12 != nil ? "Пароль контейнера .p12" : "Пароль приватного ключа · если есть")
                     SecureField("", text: Binding(get: { certificate?.passphrase ?? "" }, set: { certificate?.passphrase = $0 }))
                         .autocorrectionDisabled()
+                        .privacySensitive()
                         .wardField()
                 }
             } else {
@@ -721,6 +734,9 @@ struct CertificateEditor: View {
                     }
                 }
             }
+            if linkedID == nil {
+                manualInput
+            }
             if !dependants.isEmpty {
                 Text((certificate == nil ? "Без сертификата останутся: " : "Этот сертификат используют: ")
                      + dependants.map(\.title).joined(separator: ", "))
@@ -731,6 +747,65 @@ struct CertificateEditor: View {
                 Text(message).font(.system(size: 12)).foregroundStyle(isError ? Theme.danger : Theme.text2)
             }
         }
+    }
+
+    private func recognized(_ bundle: CertificateBundle) -> Bool {
+        let publicOK = bundle.publicKey.isEmpty || SSHKeyParser.publicKey(bundle.publicKey) != nil
+            || PEM.blocks(in: bundle.publicKey).contains { $0.label == "PUBLIC KEY" || $0.label == "RSA PUBLIC KEY" }
+        let privateOK = bundle.privateKey.isEmpty || PEM.privateKey(in: bundle.privateKey) != nil
+        let certificateOK = bundle.certificate.isEmpty || CertificateParser.primary(in: bundle.certificate) != nil
+        return !bundle.isEmpty && publicOK && privateOK && certificateOK
+    }
+
+    private var manualInput: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FieldLabel(text: "Публичный ключ / сертификат (PEM)")
+            TextEditor(text: Binding(get: {
+                certificate?.publicMaterial ?? ""
+            }, set: { text in
+                var bundle = certificate ?? CertificateBundle()
+                bundle.publicMaterial = text
+                certificate = bundle
+            }))
+            .font(.system(size: 12, design: .monospaced))
+            .scrollContentBackground(.hidden).frame(height: 100)
+            .autocorrectionDisabled().privacySensitive().wardField(height: nil)
+            HStack {
+                FieldLabel(text: "Приватный ключ (PEM)")
+                Spacer()
+                IconButton(systemName: revealPrivateKey ? "eye.slash" : "eye", label: "Показать / скрыть приватный ключ") {
+                    revealPrivateKey.toggle()
+                }
+            }
+            Group {
+                if revealPrivateKey {
+                    TextEditor(text: privateKeyInput)
+                        .font(.system(size: 12, design: .monospaced))
+                        .scrollContentBackground(.hidden).frame(height: 100)
+                } else {
+                    Button { revealPrivateKey = true } label: {
+                        Text(certificate?.privateKey.isEmpty == false ? String(repeating: "•", count: 14) : "Вставить приватный ключ…")
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(Theme.text2)
+                            .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .autocorrectionDisabled().privacySensitive().wardField(height: nil)
+            if let bundle = certificate, !bundle.isEmpty, !recognized(bundle) {
+                Text("Ключ или сертификат не распознан. Проверьте PEM и строки BEGIN / END.")
+                    .font(.system(size: 12)).foregroundStyle(Theme.danger)
+            }
+        }
+    }
+
+    private var privateKeyInput: Binding<String> {
+        Binding(get: { certificate?.privateKey ?? "" }, set: {
+            var bundle = certificate ?? CertificateBundle()
+            bundle.privateKey = $0
+            certificate = bundle
+        })
     }
 
     private func summary(_ bundle: CertificateBundle, _ first: CertificateInfo?) -> String {

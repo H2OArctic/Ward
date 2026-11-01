@@ -169,6 +169,12 @@ enum Snapshots {
                 materialWindow = previewWindow(WalletEditor(wallet: .constant(CryptoWallet(network: "Ethereum", address: "demo-address-only"))))
                 return materialWindow
             }),
+            ("7b-certificate-editor", {
+                materialWindow?.close()
+                materialWindow = previewWindow(CertificateEditor(certificate: .constant(nil), linkedID: .constant(nil), entryID: UUID())
+                    .environmentObject(store))
+                return materialWindow
+            }),
             ("8-approval", {
                 materialWindow?.close()
                 ApprovalPanel.shared.show(ApprovalPanel.Request(keyTitle: "Прод-сервер", client: "ssh из git",

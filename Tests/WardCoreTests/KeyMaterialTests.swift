@@ -93,6 +93,38 @@ final class KeyMaterialTests: XCTestCase {
         XCTAssertNotNil(key.weakness)
     }
 
+    func testCertificateManualPublicMaterialAndPrivateKeyRoundTrip() throws {
+        try run("/usr/bin/openssl", ["genrsa", "-out", "manual.key", "2048"])
+        let privateKey = try String(contentsOf: dir.appendingPathComponent("manual.key"), encoding: .utf8)
+        let publicKey = try run("/usr/bin/openssl", ["pkey", "-in", "manual.key", "-pubout"])
+        var bundle = CertificateBundle(privateKey: privateKey)
+        bundle.publicMaterial = publicKey
+        XCTAssertTrue(bundle.certificate.isEmpty)
+        XCTAssertEqual(bundle.publicKey, publicKey)
+        XCTAssertFalse(bundle.isEmpty)
+        XCTAssertNotNil(PEM.privateKey(in: bundle.privateKey))
+        let decoded = try JSONDecoder().decode(CertificateBundle.self, from: JSONEncoder().encode(bundle))
+        XCTAssertEqual(decoded, bundle)
+        var imported = CertificateBundle()
+        XCTAssertTrue(imported.absorb(text: publicKey))
+        XCTAssertFalse(imported.publicKey.isEmpty)
+        let old = try JSONDecoder().decode(CertificateBundle.self, from: Data("{}".utf8))
+        XCTAssertTrue(old.publicKey.isEmpty)
+    }
+
+    func testManualCertificatePreservesIncompleteFollowingBlock() throws {
+        let made = try makeCertificate(days: 30, name: "manual-cert")
+        let partial = "-----BEGIN PUBLIC KEY-----\npartial"
+        var bundle = CertificateBundle()
+        bundle.publicMaterial = made.cert + "\n" + partial
+        XCTAssertNotNil(CertificateParser.primary(in: bundle.certificate))
+        XCTAssertTrue(bundle.publicMaterial.contains(partial))
+        bundle.publicMaterial = "-----BEGIN "
+        XCTAssertEqual(bundle.publicMaterial, "-----BEGIN ")
+        bundle.publicMaterial = ""
+        XCTAssertTrue(bundle.isEmpty)
+    }
+
     func testGarbageIsRejected() {
         XCTAssertNil(SSHKeyParser.publicKey("ssh-ed25519 не-base64"))
         XCTAssertNil(SSHKeyParser.publicKey("ssh-rsa " + Data("ssh-ed25519".utf8).base64EncodedString()))

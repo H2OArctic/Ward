@@ -16,7 +16,7 @@
 
 `VaultSession` owns the vault lifecycle over `VaultStorage`. Tests replace storage with an in-memory implementation that can simulate failures. The app's `VaultStore` publishes session state and moves key derivation off the main thread.
 
-The vault occupies one login Keychain item with service `local.ward` and account `vault`. Its `VaultEnvelope` contains an AES-256-GCM vault key wrapped by a key derived from the master password using PBKDF2-SHA256 with 600,000 iterations. Changing the master password also rotates the vault key through `rekey`.
+The vault occupies one login Keychain item with service `WardIdentity.applicationID` (selected by `WARD_BUNDLE_ID` at build time) and account `vault`. Its `VaultEnvelope` contains an AES-256-GCM vault key wrapped by a key derived from the master password using PBKDF2-SHA256 with 600,000 iterations. Changing the master password also rotates the vault key through `rekey`.
 
 After changes, Ward writes an encrypted backup to `~/Library/Application Support/Ward/Backups`. A backup failure does not undo an already saved vault change; it is reported through `VaultSession.backupError`.
 

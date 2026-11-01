@@ -4,7 +4,7 @@ The extension is an interface to Ward on the same Mac. It stores no vault data a
 
 | Permission | Purpose |
 |---|---|
-| `nativeMessaging` | Communicates with Ward through its helper (`local.ward`). The helper accepts only this extension through `allowed_origins`; Ward verifies signatures and accepts only its helper launched by Chrome. |
+| `nativeMessaging` | Communicates with Ward through its helper (identifier selected by `WARD_BUNDLE_ID` at build time). The helper accepts only this extension through `allowed_origins`; Ward verifies signatures and accepts only its helper launched by Chrome. |
 | `activeTab` | Lets the extension popup list credentials for the active tab and fill its form. |
 | `host_permissions: <all_urls>` | Allows page scripts to show the Ward icon in login fields and intercept `navigator.credentials` for passkeys across sites. Chrome's `sender` supplies the page address for requests to Ward; the page does not supply it. |
 

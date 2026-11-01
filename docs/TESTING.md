@@ -1,6 +1,6 @@
 # Testing Ward
 
-Run commands from the repository root. This guide describes available coverage and manual procedures; it is not a record of a test run for the current build.
+Run commands from the repository root after configuring `WARD_BUNDLE_ID` as described in [development](DEVELOPMENT.md). This guide describes available coverage and manual procedures; it is not a record of a test run for the current build.
 
 ## Automated checks
 
@@ -8,6 +8,7 @@ Run commands from the repository root. This guide describes available coverage a
 swift test
 bun test Tests/BrowserExtensionTests
 bun test tools/ward-mcp.test.ts
+bun test tools/build-identity.test.ts
 ```
 
 Swift tests cover both `WardCore` and app lifecycle behavior. Browser extension tests run the real extension scripts with controlled Chrome and Ward responses. The CLI MCP tests live in `tools/ward-mcp.test.ts`.
@@ -90,7 +91,7 @@ Run these checks on disposable test data before trusting a build with real crede
 14. **Autofill and phishing:** save an entry for github.com and open another site in Safari. ⇧Return cancels without filling. On github.com it fills. Open the panel, then switch to another window before filling: the action is canceled.
 15. **Clipboard on quit:** copy a password and immediately quit with ⌘Q. Pasting does not reveal it.
 16. **Screen sharing:** start a QuickTime screen recording or Zoom sharing session. Ward windows are absent from the recording.
-17. **Vault-backed settings:** run `defaults write local.ward autoLockMinutes -int 0`, restart, and unlock. The saved setting is unchanged, and idle locking still works.
+17. **Vault-backed settings:** run `defaults write "$(cat build/application-id)" autoLockMinutes -int 0`, restart, and unlock. The saved setting is unchanged, and idle locking still works.
 18. **Hardened runtime:** run `codesign -dvv Ward.app` and check for `flags=0x10000(runtime)`.
 19. **SSH key:** import a disposable `~/.ssh/id_ed25519` test key. Its fingerprint matches `ssh-keygen -lf ~/.ssh/id_ed25519.pub`. Export it and connect using `ssh -i <file> …`. The exported file has `-rw-------` permissions.
 20. **Certificate:** select a `.crt` and `.key` together. Subject and expiration match Keychain Access. A `.p12` container can be exported and reopened with its container password.
@@ -107,7 +108,7 @@ Run these checks on disposable test data before trusting a build with real crede
 31. **Editor changes:** edit an entry, then press Escape. Ward asks whether to close without saving. With the editor open, ⌘N from the quick panel asks you to save or close the existing entry first.
 32. **Cross-origin iframe:** open an allowed site with a third-party iframe containing a password field, focus that field, and use ⇧Return. Filling is canceled. Verify that Safari and Chrome expose the iframe as its own `AXWebArea` with its own address.
 33. **Drafts:** edit an entry's password without saving, quit, reopen, and continue the unsaved draft. The new password is in the editor and can be saved. Repeat through locking with ⌃⌘Q. Editing an entry with a draft opens that draft; discarding it restores the saved entry.
-34. **Security state outside UserDefaults:** `defaults read local.ward` does not contain `failedUnlocks`, `sshAgentWanted`, `backupsToKeep`, or `mirrorBackupPath`. Backup count and mirror directory survive restart.
+34. **Security state outside UserDefaults:** `defaults read "$(cat build/application-id)"` does not contain `failedUnlocks`, `sshAgentWanted`, `backupsToKeep`, or `mirrorBackupPath`. Backup count and mirror directory survive restart.
 35. **Temporary approval:** direct terminal `ssh <server>` does not offer the ten-minute approval button. In a disposable Git repository configured for SSH signing, `git rebase -S HEAD~5` can use temporary approval for the remaining commits of the same command; a later Git command prompts again.
 36. **Companies, nested projects, and services:** after migration, previous work projects appear under the default company, which can be renamed. Create another company: it starts empty with its own projects and services. Give a service such as Hetzner one shared account and accounts for two projects: its page has three sections, and project pages show the service. Deleting the service preserves project accounts in their projects and the shared account in shared credentials. Deleting a parent project promotes its children one level.
 37. **Hide Data:** toggle ⌘⇧H or the eye button in the sidebar/quick panel. Usernames, addresses, TOTP codes, notes, and field values are hidden; titles and copy buttons still work. Toggle again to reveal them. The setting survives restart.

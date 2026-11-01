@@ -5,7 +5,8 @@ let package = Package(
     name: "Ward",
     platforms: [.macOS(.v14)],
     targets: [
-        .target(name: "WardCore", path: "Sources/WardCore"),
+        .plugin(name: "WardIdentityPlugin", capability: .buildTool(), path: "Plugins/WardIdentityPlugin"),
+        .target(name: "WardCore", path: "Sources/WardCore", plugins: [.plugin(name: "WardIdentityPlugin")]),
         .executableTarget(name: "Ward", dependencies: ["WardCore"], path: "Sources/Ward"),
         .executableTarget(name: "WardBrowserHost", dependencies: ["WardCore"], path: "Sources/WardBrowserHost"),
         .executableTarget(name: "WardCLI", dependencies: ["WardCore"], path: "Sources/WardCLI"),

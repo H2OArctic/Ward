@@ -7,13 +7,13 @@ Run commands from the repository root, including commands linked from this direc
 Ward requires macOS 14 or later and a Swift 6 toolchain. The package uses Swift 5 language mode.
 
 ```bash
-./build.sh
+WARD_BUNDLE_ID=com.example.ward ./build.sh
 open Ward.app
 ```
 
 Quit an already running Ward before replacing its app bundle. `pkill -x Ward` stops the running process. Use demo modes for automated verification rather than opening the real vault.
 
-`./build.sh debug` produces the debug build used for snapshots and integration demos. The script bundles the app, CLI, native messaging helper, browser extension, and icon, then signs the nested executables and app with hardened runtime.
+`WARD_BUNDLE_ID=com.example.ward ./build.sh debug` produces the debug build used for snapshots and integration demos. The script bundles the app, CLI, native messaging helper, browser extension, and icon, then signs the nested executables and app with hardened runtime.
 
 ## Code signing
 
@@ -39,12 +39,16 @@ The Chrome bridge requires a Team ID. Self-signed and ad-hoc builds do not enabl
 
 ## Upgrading from a different application identifier
 
-Ward uses the neutral application identifier `local.ward`. The browser helper and CLI are signed as `local.ward.browser-host` and `local.ward.cli`. The native messaging host and Keychain service use `local.ward` as well.
+`WARD_BUNDLE_ID` is required for `build.sh` and has no default or allowlist. Set it to the identifier of the installed application when updating. The `com.example.ward` commands in this guide are examples, not a suggested identifier for an existing vault. Use lowercase letters, digits, and dots, with at least two nonempty segments; this format is accepted by both macOS bundle identifiers and Chrome native messaging host names.
+
+The build records the selected identifier in the ignored local file `build/application-id`. A SwiftPM build-tool plugin generates `WardBuildIdentity` from that file, so changes to the configuration invalidate the compiled identity. No application identifier is stored in tracked Swift or extension code. App metadata, helper signatures, and the bundled extension host use the same build setting. The Keychain service and native messaging host use the selected application identifier; helpers append `.browser-host` and `.cli`.
+
+For a fresh checkout, configure the identity before running `swift build` or `swift test`: `WARD_BUNDLE_ID=com.example.ward bash tools/build-identity.sh configure build/application-id`. Direct SwiftPM commands reuse this local configuration. The extension source contains a build placeholder; load the configured extension from the app bundle rather than the source directory. Building does not migrate vaults.
 
 Changing the application identifier does not delete an older vault, but the new build looks under a different Keychain service. Migrate before creating a new vault or launching the new app:
 
 1. In the old build, save any drafts and export an encrypted `.wardbackup` to a safe location outside `Ward/Backups`. Keep the old app and this copy until you have verified the migration. If the browser bridge was enabled, disable it in the old build to remove its old native messaging registration.
-2. Quit Ward. Build the new app, but do not launch it yet.
+2. Quit Ward. Build the new app with the intended `WARD_BUNDLE_ID`, but do not launch it yet.
 3. Find the previous service name in Keychain Access for Ward's vault item (account `vault`). Enter it interactively, then run the new CLI from the app bundle:
 
    ```bash
@@ -69,7 +73,7 @@ The normal backup import is a merge of entries and their organization; it does n
 Snapshots require a debug build. This mode uses demo data, does not access the real vault, saves PNG images of the main screens, and exits. Screen Recording permission is not required.
 
 ```bash
-./build.sh debug
+WARD_BUNDLE_ID=com.example.ward ./build.sh debug
 WARD_SNAPSHOT=/tmp/ward-snapshots ./Ward.app/Contents/MacOS/Ward
 ```
 
@@ -86,7 +90,7 @@ The generator writes `AppIcon.icns`. Preview images are written under `build/`, 
 Use a debug build, Google Chrome, Bun, and a Python interpreter with `webauthn` available:
 
 ```bash
-./build.sh debug
+WARD_BUNDLE_ID=com.example.ward ./build.sh debug
 tools/browser-e2e/run.sh
 ```
 

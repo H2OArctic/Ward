@@ -3,7 +3,7 @@
 // Состояние — только живое соединение с помощником: открытый порт и держит service worker (правило MV3),
 // а сохранять что-либо в chrome.storage нельзя — через расширение идут пароли.
 
-const HOST = "local.ward";
+const HOST = "__WARD_APPLICATION_ID__";
 let port = null;
 let nextID = 1;
 const pending = new Map();

@@ -7,7 +7,8 @@ cd "$ROOT"
 
 APP_NAME="Ward"
 CONFIG="${1:-release}"      # release | debug (debug нужен только для WARD_SNAPSHOT)
-BUNDLE_ID="local.ward"
+BUNDLE_ID="${WARD_BUNDLE_ID:?Set WARD_BUNDLE_ID to the installed application identifier}"
+bash "$ROOT/tools/build-identity.sh" configure "$ROOT/build/application-id"
 
 echo "==> swift build ($CONFIG)"
 swift build -c "$CONFIG"
@@ -28,6 +29,8 @@ mkdir -p "$APP/Contents/Helpers"
 cp "$BIN_DIR/WardBrowserHost" "$APP/Contents/Helpers/ward-browser-host"
 cp "$BIN_DIR/WardCLI" "$APP/Contents/Helpers/ward"
 cp -R "$ROOT/BrowserExtension" "$APP/Contents/Resources/BrowserExtension"
+sed "s/^const HOST = .*/const HOST = \"$BUNDLE_ID\";/" "$ROOT/BrowserExtension/background.js" > \
+    "$APP/Contents/Resources/BrowserExtension/background.js"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
